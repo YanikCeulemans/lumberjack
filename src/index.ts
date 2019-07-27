@@ -1,5 +1,8 @@
 import { format as dateFormat } from 'date-fns';
 import jsonStringify from 'fast-safe-stringify';
+import * as util from 'util';
+
+import * as colorizer from './colorizer';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -39,16 +42,6 @@ export const outputs = {
     };
   },
 };
-
-export function createConsoleOutput(): Output {
-  const write = async (logLevel: LogLevel, formattedData: string) => {
-    console[logLevel](formattedData);
-  };
-  return {
-    write,
-    writeLn: (...args) => write(...args),
-  };
-}
 
 export type LogMeta = {
   level: LogLevel;
@@ -103,6 +96,22 @@ export const formatters = {
     return (logMeta: LogMeta) =>
       jsonStringify(logMeta, undefined, options.spaces);
   },
+  simple: (): Formatter => {
+    function simpleLevel(logLevel: LogLevel) {
+      switch (logLevel) {
+        case 'debug':
+          return colorizer.green(logLevel.toUpperCase());
+        case 'info':
+          return colorizer.blue(logLevel.toUpperCase());
+        case 'warn':
+          return colorizer.yellow(logLevel.toUpperCase());
+        case 'error':
+          return colorizer.red(logLevel.toUpperCase());
+      }
+    }
+    return ({ timestamp, app, level, message }) =>
+      `[${timestamp}] [${app}] ${simpleLevel(level)}: ${message}`;
+  },
 };
 
 type LoggerOptions = {
@@ -140,9 +149,9 @@ export function createLogger(options: LoggerOptions): Logger {
   const log = (logLevel: LogLevel, ...args: any[]) => {
     if (!isSevereEnough(logLevel)) return;
 
-    const outputs = optionsToUse.outputs || [createConsoleOutput()];
+    const outputsToUse = optionsToUse.outputs || [outputs.console()];
     const transformer = optionsToUse.transformer || (x => x);
-    outputs.forEach(output => {
+    outputsToUse.forEach(output => {
       const logMeta = {
         ...optionsToUse.defaultMeta,
         level: logLevel,

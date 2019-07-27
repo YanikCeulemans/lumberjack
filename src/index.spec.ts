@@ -7,6 +7,7 @@ import {
   formatters,
   LogLevel,
 } from '.';
+import * as colorizer from './colorizer';
 
 describe('lumberjack', () => {
   describe('#compose', () => {
@@ -150,6 +151,26 @@ describe('lumberjack', () => {
       expect((<any>mockedOutput.write).mock.calls[0][1]).toMatch(
         /"timestamp": "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"/,
       );
+    });
+
+    it('should log with a custom formatter', () => {
+      const customFormatter = ({ level, message, app, timestamp }: LogMeta) =>
+        `[${timestamp}] [${app}] ${level.toUpperCase()}: ${message}`;
+      const logger = createLogger({
+        threshold: 'debug',
+        formatter: customFormatter,
+        outputs: [mockedOutput],
+        transformer: transformers.timestamp({
+          format: 'YYYY-MM-DD HH:mm:ss',
+        }),
+        defaultMeta: {
+          app: 'lumberjack',
+        },
+      });
+
+      logger.debug('it should log anything');
+
+      expect(mockedOutput.write).toHaveBeenCalledWith('debug', '');
     });
 
     it('should not log if the level does not pass the threshold', () => {
