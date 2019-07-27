@@ -96,7 +96,9 @@ export const formatters = {
     return (logMeta: LogMeta) =>
       jsonStringify(logMeta, undefined, options.spaces);
   },
-  simple: (): Formatter => {
+  simple: (
+    formatFn: (logMeta: LogMeta, simpleFormat: string) => string = (_, x) => x,
+  ): Formatter => {
     function simpleLevel(logLevel: LogLevel) {
       switch (logLevel) {
         case 'debug':
@@ -109,8 +111,8 @@ export const formatters = {
           return colorizer.red(logLevel.toUpperCase());
       }
     }
-    return ({ timestamp, app, level, message }) =>
-      `[${timestamp}] [${app}] ${simpleLevel(level)}: ${message}`;
+    return logMeta =>
+      formatFn(logMeta, `${simpleLevel(logMeta.level)}: ${logMeta.message}`);
   },
 };
 
@@ -157,8 +159,8 @@ const format = (formatString: string, ...args: any[]) =>
   util.formatWithOptions(
     {
       depth: null,
-      compact: false,
-      colors: true,
+      // compact: false,
+      // colors: true,
     },
     formatString,
     ...args,

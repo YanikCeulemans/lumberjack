@@ -89,7 +89,7 @@ describe('lumberjack', () => {
         'debug',
         jsonFormatter({
           level: 'debug',
-          message: 'it should log anything true { a: 1 } [] 10',
+          message: 'it should log anything true \n{ a: 1 }\n \n[]\n 10',
         }),
       );
     });
@@ -109,7 +109,7 @@ describe('lumberjack', () => {
         'debug',
         jsonFormatter({
           level: 'debug',
-          message: `it should log anything { some: { complex: { object: { with: { nested: 'value' } } } } }`,
+          message: `it should log anything \n{ some: { complex: { object: { with: { nested: 'value' } } } } }\n`,
         }),
       );
     });
