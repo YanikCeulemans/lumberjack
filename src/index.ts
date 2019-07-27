@@ -223,10 +223,6 @@ export function createLogger(options: LoggerOptions): Logger {
   const partialLog = (logLevel: LogLevel) => (...args: any[]) =>
     log(logLevel, ...args);
 
-  const debug = partialLog('debug');
-  const info = partialLog('info');
-  const warn = partialLog('warn');
-  const error = partialLog('error');
   const configure = (newOptions: ConfigLoggerOptions) => {
     optionsToUse.threshold = newOptions.threshold || optionsToUse.threshold;
     optionsToUse.formatter = newOptions.formatter || optionsToUse.formatter;
@@ -238,10 +234,10 @@ export function createLogger(options: LoggerOptions): Logger {
   };
   return {
     log,
-    debug,
-    info,
-    warn,
-    error,
+    debug: partialLog('debug'),
+    info: partialLog('info'),
+    warn: partialLog('warn'),
+    error: partialLog('error'),
     configure,
   };
 }
