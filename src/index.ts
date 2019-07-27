@@ -1,7 +1,7 @@
 import { format as dateFormat } from 'date-fns';
 import jsonStringify from 'fast-safe-stringify';
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 function getSeverity(logLevel: LogLevel): number {
   switch (logLevel) {

@@ -5,6 +5,7 @@ import {
   Output,
   transformers,
   formatters,
+  LogLevel,
 } from '.';
 
 describe('lumberjack', () => {
@@ -162,5 +163,27 @@ describe('lumberjack', () => {
 
       expect(mockedOutput.write).not.toHaveBeenCalled();
     });
+
+    const cases: LogLevel[][] = [['debug'], ['info'], ['warn'], ['error']];
+    it.each(cases)(
+      'logger.%s() should log to the correct level',
+      (level: LogLevel) => {
+        const logger = createLogger({
+          threshold: 'debug',
+          formatter: jsonFormatter,
+          outputs: [mockedOutput],
+        });
+
+        logger[level]('it should log anything');
+
+        expect(mockedOutput.write).toHaveBeenCalledWith(
+          level,
+          jsonFormatter({
+            level,
+            message: 'it should log anything',
+          }),
+        );
+      },
+    );
   });
 });
