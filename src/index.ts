@@ -139,6 +139,34 @@ type Logger = {
   configure: (options: ConfigLoggerOptions) => void;
 };
 
+const formatRegExp = /%[scdjifoO%]/g;
+const formatArgMapper = (x: any) => (typeof x === 'string' ? '%s' : '%O');
+const format = (formatString: string, ...args: any[]) =>
+  util.formatWithOptions(
+    {
+      depth: null,
+    },
+    formatString,
+    ...args,
+  );
+function getMessage(args: any[]) {
+  const [head, ...tail] = args;
+  if (typeof head !== 'string') {
+    return format(args.map(formatArgMapper).join(' '), ...args);
+  }
+
+  if (tail.length === 0) {
+    return head;
+  }
+
+  const tokens = head.match(formatRegExp);
+  const tokenCountToAdd = tokens ? tail.length - tokens.length : tail.length;
+  const headWithAddedTokens = [head]
+    .concat(tail.slice(tail.length - tokenCountToAdd).map(formatArgMapper))
+    .join(' ');
+  return format(headWithAddedTokens, ...tail);
+}
+
 export function createLogger(options: LoggerOptions): Logger {
   const optionsToUse = { ...options };
 
@@ -152,10 +180,11 @@ export function createLogger(options: LoggerOptions): Logger {
     const outputsToUse = optionsToUse.outputs || [outputs.console()];
     const transformer = optionsToUse.transformer || (x => x);
     outputsToUse.forEach(output => {
+      const message = getMessage(args);
       const logMeta = {
         ...optionsToUse.defaultMeta,
         level: logLevel,
-        message: args.join(' '),
+        message,
       };
       const formattedMeta = optionsToUse.formatter(transformer(logMeta));
       output.writeLn(logLevel, formattedMeta);

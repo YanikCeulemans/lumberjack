@@ -58,7 +58,7 @@ describe('lumberjack', () => {
       };
     });
 
-    it('should log to the output', async () => {
+    it('should log to the output', () => {
       const logger = createLogger({
         threshold: 'debug',
         formatter: jsonFormatter,
@@ -72,6 +72,44 @@ describe('lumberjack', () => {
         jsonFormatter({
           level: 'debug',
           message: 'it should log anything',
+        }),
+      );
+    });
+
+    it('should log spread args', () => {
+      const logger = createLogger({
+        threshold: 'debug',
+        formatter: jsonFormatter,
+        outputs: [mockedOutput],
+      });
+
+      logger.log('debug', 'it should log anything', true, { a: 1 }, [], 10);
+
+      expect(mockedOutput.write).toHaveBeenCalledWith(
+        'debug',
+        jsonFormatter({
+          level: 'debug',
+          message: 'it should log anything true { a: 1 } [] 10',
+        }),
+      );
+    });
+
+    it('should log nested objects', () => {
+      const logger = createLogger({
+        threshold: 'debug',
+        formatter: jsonFormatter,
+        outputs: [mockedOutput],
+      });
+
+      logger.log('debug', 'it should log anything', {
+        some: { complex: { object: { with: { nested: 'value' } } } },
+      });
+
+      expect(mockedOutput.write).toHaveBeenCalledWith(
+        'debug',
+        jsonFormatter({
+          level: 'debug',
+          message: `it should log anything { some: { complex: { object: { with: { nested: 'value' } } } } }`,
         }),
       );
     });
@@ -170,7 +208,9 @@ describe('lumberjack', () => {
 
       logger.debug('it should log anything');
 
-      expect(mockedOutput.write).toHaveBeenCalledWith('debug', '');
+      expect((<any>mockedOutput.write).mock.calls[0][1]).toMatch(
+        /\[.+\] \[lumberjack\] DEBUG: it should log anything/,
+      );
     });
 
     it('should not log if the level does not pass the threshold', () => {
