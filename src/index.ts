@@ -140,11 +140,25 @@ type Logger = {
 };
 
 const formatRegExp = /%[scdjifoO%]/g;
-const formatArgMapper = (x: any) => (typeof x === 'string' ? '%s' : '%O');
+const formatArgMapper = (x: any) => {
+  switch (typeof x) {
+    case 'string':
+      return '%s';
+    case 'number':
+    case 'bigint':
+      return '%d';
+    case 'boolean':
+      return '%O';
+    default:
+      return '\n%O\n';
+  }
+};
 const format = (formatString: string, ...args: any[]) =>
   util.formatWithOptions(
     {
       depth: null,
+      compact: false,
+      colors: true,
     },
     formatString,
     ...args,
