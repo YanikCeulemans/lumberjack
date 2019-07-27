@@ -49,36 +49,59 @@ type LoggerOptions = {
   defaultMeta?: { [key: string]: any };
 };
 
-interface Logger {
+type ConfigLoggerOptions = {
+  threshold?: LogLevel;
+  formatter?: Formatter;
+  outputs?: Output[];
+  transformer?: Transformer;
+  defaultMeta?: { [key: string]: any };
+};
+
+type Logger = {
   log: (level: LogLevel, ...args: any[]) => void;
   debug: (...args: any[]) => void;
   info: (...args: any[]) => void;
   warn: (...args: any[]) => void;
   error: (...args: any[]) => void;
-}
+  configure: (options: ConfigLoggerOptions) => void;
+};
 
 export function createLogger(options: LoggerOptions): Logger {
-  const outputs = options.outputs || [createConsoleOutput()];
+  const optionsToUse = { ...options };
+  const outputs = optionsToUse.outputs || [createConsoleOutput()];
   const log = (logLevel: LogLevel, ...args: any[]) => {
     outputs.forEach(output => {
       const logMeta = {
-        ...options.defaultMeta,
+        ...optionsToUse.defaultMeta,
         level: logLevel,
         message: args.join(' '),
       };
-      const formattedMeta = options.formatter(logMeta);
+      const formattedMeta = optionsToUse.formatter(logMeta);
       output.writeLn(logLevel, formattedMeta);
     });
   };
-  const debug = (...args: any[]) => log('debug', ...args);
-  const info = (...args: any[]) => log('info', ...args);
-  const warn = (...args: any[]) => log('warn', ...args);
-  const error = (...args: any[]) => log('error', ...args);
+  const partialLog = (logLevel: LogLevel) => (...args: any[]) =>
+    log(logLevel, ...args);
+
+  const debug = partialLog('debug');
+  const info = partialLog('info');
+  const warn = partialLog('warn');
+  const error = partialLog('error');
+  const configure = (newOptions: ConfigLoggerOptions) => {
+    optionsToUse.threshold = newOptions.threshold || optionsToUse.threshold;
+    optionsToUse.formatter = newOptions.formatter || optionsToUse.formatter;
+    optionsToUse.outputs = newOptions.outputs || optionsToUse.outputs;
+    optionsToUse.transformer =
+      newOptions.transformer || optionsToUse.transformer;
+    optionsToUse.defaultMeta =
+      newOptions.defaultMeta || optionsToUse.defaultMeta;
+  };
   return {
     log,
     debug,
     info,
     warn,
     error,
+    configure,
   };
 }

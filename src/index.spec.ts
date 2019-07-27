@@ -1,12 +1,11 @@
 import { compose, LogMeta, createLogger, createJsonFormatter, Output } from '.';
 
-const value: LogMeta = {
-  level: 'debug',
-  message: 'Some log message',
-};
-
 describe('lumberjack', () => {
   describe('#compose', () => {
+    const value: LogMeta = {
+      level: 'debug',
+      message: 'Some log message',
+    };
     it('Should return the identity transformer when given no transformers', () => {
       const identityTransformer = compose();
 
@@ -84,6 +83,32 @@ describe('lumberjack', () => {
         'debug',
         jsonFormatter({
           app: 'lumberjack',
+          level: 'debug',
+          message: 'it should log anything',
+        }),
+      );
+    });
+
+    it('should include newly configured default meta data', () => {
+      const jsonFormatter = createJsonFormatter({
+        spaces: 2,
+      });
+      const logger = createLogger({
+        threshold: 'debug',
+        formatter: jsonFormatter,
+        outputs: [mockedOutput],
+        defaultMeta: {
+          app: 'lumberjack',
+        },
+      });
+
+      logger.configure({ defaultMeta: { app: 'lumberjack tests' } });
+      logger.log('debug', 'it should log anything');
+
+      expect(mockedOutput.write).toHaveBeenCalledWith(
+        'debug',
+        jsonFormatter({
+          app: 'lumberjack tests',
           level: 'debug',
           message: 'it should log anything',
         }),
