@@ -150,5 +150,17 @@ describe('lumberjack', () => {
         /"timestamp": "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"/,
       );
     });
+
+    it('should not log if the level does not pass the threshold', () => {
+      const logger = createLogger({
+        threshold: 'warn',
+        formatter: jsonFormatter,
+        outputs: [mockedOutput],
+      });
+
+      logger.log('info', 'it should log anything');
+
+      expect(mockedOutput.write).not.toHaveBeenCalled();
+    });
   });
 });

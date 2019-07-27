@@ -3,6 +3,20 @@ import jsonStringify from 'fast-safe-stringify';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+function getSeverity(logLevel: LogLevel): number {
+  switch (logLevel) {
+    case 'error':
+      return 0;
+    case 'warn':
+      return 1;
+    case 'info':
+      return 2;
+    case 'debug':
+    default:
+      return 3;
+  }
+}
+
 export interface Output {
   formatter?: Formatter;
   write: (logLevel: LogLevel, formattedData: string) => Promise<void>;
@@ -119,7 +133,13 @@ type Logger = {
 export function createLogger(options: LoggerOptions): Logger {
   const optionsToUse = { ...options };
 
+  function isSevereEnough(logLevel: LogLevel) {
+    return getSeverity(logLevel) <= getSeverity(optionsToUse.threshold);
+  }
+
   const log = (logLevel: LogLevel, ...args: any[]) => {
+    if (!isSevereEnough(logLevel)) return;
+
     const outputs = optionsToUse.outputs || [createConsoleOutput()];
     const transformer = optionsToUse.transformer || (x => x);
     outputs.forEach(output => {
