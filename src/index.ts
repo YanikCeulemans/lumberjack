@@ -8,14 +8,11 @@ export interface Output {
 
 export function createConsoleOutput(): Output {
   const write = async (logLevel: LogLevel, formattedData: string) => {
-    console.log(formattedData);
-  };
-  const writeLn = async (logLevel: LogLevel, formattedData: string) => {
-    write(logLevel, formattedData);
+    console[logLevel](formattedData);
   };
   return {
     write,
-    writeLn,
+    writeLn: (...args) => write(...args),
   };
 }
 
@@ -46,9 +43,10 @@ export function createJsonFormatter(
 
 type LoggerOptions = {
   threshold: LogLevel;
+  formatter: Formatter;
   outputs?: Output[];
   transformer?: Transformer;
-  formatter: Formatter;
+  defaultMeta?: { [key: string]: any };
 };
 
 interface Logger {
@@ -63,13 +61,13 @@ export function createLogger(options: LoggerOptions): Logger {
   const outputs = options.outputs || [createConsoleOutput()];
   const log = (logLevel: LogLevel, ...args: any[]) => {
     outputs.forEach(output => {
-      output.writeLn(
-        logLevel,
-        options.formatter({
-          level: logLevel,
-          message: args.join(' '),
-        }),
-      );
+      const logMeta = {
+        ...options.defaultMeta,
+        level: logLevel,
+        message: args.join(' '),
+      };
+      const formattedMeta = options.formatter(logMeta);
+      output.writeLn(logLevel, formattedMeta);
     });
   };
   const debug = (...args: any[]) => log('debug', ...args);

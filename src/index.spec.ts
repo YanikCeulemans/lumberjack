@@ -36,12 +36,15 @@ describe('lumberjack', () => {
   });
 
   describe('logger', () => {
-    it('should log to the output', async () => {
-      const mockedOutput: Output = {
+    let mockedOutput: Output;
+    beforeEach(() => {
+      mockedOutput = {
         write: jest.fn(),
         writeLn: (...args) => mockedOutput.write(...args),
       };
+    });
 
+    it('should log to the output', async () => {
       const jsonFormatter = createJsonFormatter({
         spaces: 2,
       });
@@ -56,6 +59,31 @@ describe('lumberjack', () => {
       expect(mockedOutput.write).toHaveBeenCalledWith(
         'debug',
         jsonFormatter({
+          level: 'debug',
+          message: 'it should log anything',
+        }),
+      );
+    });
+
+    it('should include default meta data', () => {
+      const jsonFormatter = createJsonFormatter({
+        spaces: 2,
+      });
+      const logger = createLogger({
+        threshold: 'debug',
+        formatter: jsonFormatter,
+        outputs: [mockedOutput],
+        defaultMeta: {
+          app: 'lumberjack',
+        },
+      });
+
+      logger.log('debug', 'it should log anything');
+
+      expect(mockedOutput.write).toHaveBeenCalledWith(
+        'debug',
+        jsonFormatter({
+          app: 'lumberjack',
           level: 'debug',
           message: 'it should log anything',
         }),
