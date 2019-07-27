@@ -1,4 +1,11 @@
-import { compose, LogMeta, createLogger, createJsonFormatter, Output } from '.';
+import {
+  compose,
+  LogMeta,
+  createLogger,
+  createJsonFormatter,
+  Output,
+  transformers,
+} from '.';
 
 describe('lumberjack', () => {
   describe('#compose', () => {
@@ -36,17 +43,20 @@ describe('lumberjack', () => {
 
   describe('logger', () => {
     let mockedOutput: Output;
+
+    const jsonFormatter = createJsonFormatter({
+      spaces: 2,
+    });
+
     beforeEach(() => {
+      const write = jest.fn();
       mockedOutput = {
-        write: jest.fn(),
-        writeLn: (...args) => mockedOutput.write(...args),
+        write,
+        writeLn: write,
       };
     });
 
     it('should log to the output', async () => {
-      const jsonFormatter = createJsonFormatter({
-        spaces: 2,
-      });
       const logger = createLogger({
         threshold: 'debug',
         formatter: jsonFormatter,
@@ -65,9 +75,6 @@ describe('lumberjack', () => {
     });
 
     it('should include default meta data', () => {
-      const jsonFormatter = createJsonFormatter({
-        spaces: 2,
-      });
       const logger = createLogger({
         threshold: 'debug',
         formatter: jsonFormatter,
@@ -90,9 +97,6 @@ describe('lumberjack', () => {
     });
 
     it('should include newly configured default meta data', () => {
-      const jsonFormatter = createJsonFormatter({
-        spaces: 2,
-      });
       const logger = createLogger({
         threshold: 'debug',
         formatter: jsonFormatter,
@@ -112,6 +116,38 @@ describe('lumberjack', () => {
           level: 'debug',
           message: 'it should log anything',
         }),
+      );
+    });
+
+    it('should add a timestamp without format', () => {
+      const logger = createLogger({
+        threshold: 'debug',
+        formatter: jsonFormatter,
+        outputs: [mockedOutput],
+        transformer: transformers.timestamp(),
+      });
+
+      logger.log('debug', 'it should log anything');
+
+      expect((<any>mockedOutput.write).mock.calls[0][1]).toMatch(
+        /"timestamp": "\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z"/,
+      );
+    });
+
+    it('should add a timestamp with format', () => {
+      const logger = createLogger({
+        threshold: 'debug',
+        formatter: jsonFormatter,
+        outputs: [mockedOutput],
+        transformer: transformers.timestamp({
+          format: 'YYYY-MM-DD HH:mm:ss',
+        }),
+      });
+
+      logger.log('debug', 'it should log anything');
+
+      expect((<any>mockedOutput.write).mock.calls[0][1]).toMatch(
+        /"timestamp": "\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"/,
       );
     });
   });

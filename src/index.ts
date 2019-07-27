@@ -1,3 +1,5 @@
+import { format as dateFormat } from 'date-fns';
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface Output {
@@ -29,6 +31,31 @@ export function compose(...transformers: Transformer[]): Transformer {
     return transformers.reduce((acc, curr) => curr(acc), logMeta);
   };
 }
+
+type TimestampOptions = {
+  /**
+   * The format string for the timestamp. e.g. 'YYYY-MM-DD HH:mm:ss'.
+   * See date-fns docs at: https://date-fns.org/v1.30.1/docs/format
+   */
+  format?: string;
+};
+
+export const transformers = {
+  /**
+   * Adds a timestamp meta data field.
+   */
+  timestamp: (options: TimestampOptions = {}): Transformer => (x: LogMeta) => {
+    const now = new Date();
+    const timestamp = options.format
+      ? dateFormat(now, options.format)
+      : now.toISOString();
+    const transformed: LogMeta = {
+      ...x,
+      timestamp,
+    };
+    return transformed;
+  },
+};
 
 export type Formatter = (logMeta: LogMeta) => string;
 
@@ -68,18 +95,21 @@ type Logger = {
 
 export function createLogger(options: LoggerOptions): Logger {
   const optionsToUse = { ...options };
-  const outputs = optionsToUse.outputs || [createConsoleOutput()];
+
   const log = (logLevel: LogLevel, ...args: any[]) => {
+    const outputs = optionsToUse.outputs || [createConsoleOutput()];
+    const transformer = optionsToUse.transformer || (x => x);
     outputs.forEach(output => {
       const logMeta = {
         ...optionsToUse.defaultMeta,
         level: logLevel,
         message: args.join(' '),
       };
-      const formattedMeta = optionsToUse.formatter(logMeta);
+      const formattedMeta = optionsToUse.formatter(transformer(logMeta));
       output.writeLn(logLevel, formattedMeta);
     });
   };
+
   const partialLog = (logLevel: LogLevel) => (...args: any[]) =>
     log(logLevel, ...args);
 
