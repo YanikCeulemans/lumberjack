@@ -122,6 +122,10 @@ type LoggerOptions = {
   outputs?: Output[];
   transformer?: Transformer;
   defaultMeta?: { [key: string]: any };
+  splatOptions?: {
+    compact?: boolean;
+    colors?: boolean;
+  };
 };
 
 type ConfigLoggerOptions = {
@@ -130,6 +134,10 @@ type ConfigLoggerOptions = {
   outputs?: Output[];
   transformer?: Transformer;
   defaultMeta?: { [key: string]: any };
+  splatOptions?: {
+    compact?: boolean;
+    colors?: boolean;
+  };
 };
 
 type Logger = {
@@ -155,39 +163,44 @@ const formatArgMapper = (x: any) => {
       return '\n%O\n';
   }
 };
-const format = (formatString: string, ...args: any[]) =>
-  util.formatWithOptions(
-    {
-      depth: null,
-      // compact: false,
-      // colors: true,
-    },
-    formatString,
-    ...args,
-  );
-function getMessage(args: any[]) {
-  const [head, ...tail] = args;
-  if (typeof head !== 'string') {
-    return format(args.map(formatArgMapper).join(' '), ...args);
-  }
-
-  if (tail.length === 0) {
-    return head;
-  }
-
-  const tokens = head.match(formatRegExp);
-  const tokenCountToAdd = tokens ? tail.length - tokens.length : tail.length;
-  const headWithAddedTokens = [head]
-    .concat(tail.slice(tail.length - tokenCountToAdd).map(formatArgMapper))
-    .join(' ');
-  return format(headWithAddedTokens, ...tail);
-}
 
 export function createLogger(options: LoggerOptions): Logger {
   const optionsToUse = { ...options };
 
   function isSevereEnough(logLevel: LogLevel) {
     return getSeverity(logLevel) <= getSeverity(optionsToUse.threshold);
+  }
+
+  const format = (formatString: string, ...args: any[]) =>
+    util.formatWithOptions(
+      {
+        depth: null,
+        compact:
+          (optionsToUse.splatOptions && optionsToUse.splatOptions.compact) ||
+          true,
+        colors:
+          (optionsToUse.splatOptions && optionsToUse.splatOptions.colors) ||
+          false,
+      },
+      formatString,
+      ...args,
+    );
+  function getMessage(args: any[]) {
+    const [head, ...tail] = args;
+    if (typeof head !== 'string') {
+      return format(args.map(formatArgMapper).join(' '), ...args);
+    }
+
+    if (tail.length === 0) {
+      return head;
+    }
+
+    const tokens = head.match(formatRegExp);
+    const tokenCountToAdd = tokens ? tail.length - tokens.length : tail.length;
+    const headWithAddedTokens = [head]
+      .concat(tail.slice(tail.length - tokenCountToAdd).map(formatArgMapper))
+      .join(' ');
+    return format(headWithAddedTokens, ...tail);
   }
 
   const log = (logLevel: LogLevel, ...args: any[]) => {
