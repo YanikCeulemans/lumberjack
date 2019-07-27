@@ -1,4 +1,5 @@
 import { format as dateFormat } from 'date-fns';
+import jsonStringify from 'fast-safe-stringify';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -7,6 +8,23 @@ export interface Output {
   write: (logLevel: LogLevel, formattedData: string) => Promise<void>;
   writeLn: (logLevel: LogLevel, formattedData: string) => Promise<void>;
 }
+
+export type OutputOptions = {
+  formatter?: Formatter;
+};
+
+export const outputs = {
+  console: (options: OutputOptions = {}): Output => {
+    const write = async (logLevel: LogLevel, formattedData: string) => {
+      console[logLevel](formattedData);
+    };
+    return {
+      formatter: options.formatter,
+      write,
+      writeLn: (...args) => write(...args),
+    };
+  },
+};
 
 export function createConsoleOutput(): Output {
   const write = async (logLevel: LogLevel, formattedData: string) => {
@@ -59,14 +77,19 @@ export const transformers = {
 
 export type Formatter = (logMeta: LogMeta) => string;
 
-type JsonFormatterOptions = { spaces?: number };
+type JsonFormatterOptions = {
+  /**
+   * The amount of spaces to be used for formatting the `LogMeta` object.
+   */
+  spaces?: number;
+};
 
-export function createJsonFormatter(
-  options: JsonFormatterOptions = {},
-): Formatter {
-  return (logMeta: LogMeta) =>
-    JSON.stringify(logMeta, undefined, options.spaces);
-}
+export const formatters = {
+  json: (options: JsonFormatterOptions): Formatter => {
+    return (logMeta: LogMeta) =>
+      jsonStringify(logMeta, undefined, options.spaces);
+  },
+};
 
 type LoggerOptions = {
   threshold: LogLevel;

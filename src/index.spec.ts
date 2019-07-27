@@ -2,9 +2,9 @@ import {
   compose,
   LogMeta,
   createLogger,
-  createJsonFormatter,
   Output,
   transformers,
+  formatters,
 } from '.';
 
 describe('lumberjack', () => {
@@ -44,7 +44,7 @@ describe('lumberjack', () => {
   describe('logger', () => {
     let mockedOutput: Output;
 
-    const jsonFormatter = createJsonFormatter({
+    const jsonFormatter = formatters.json({
       spaces: 2,
     });
 
