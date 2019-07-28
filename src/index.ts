@@ -44,7 +44,7 @@ const formatArgMapper = (x: any) => {
     case 'boolean':
       return '%O';
     default:
-      return '\n%O\n';
+      return '%O';
   }
 };
 
