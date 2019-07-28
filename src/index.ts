@@ -1,120 +1,14 @@
-import { format as dateFormat } from 'date-fns';
-import jsonStringify from 'fast-safe-stringify';
 import * as util from 'util';
 
-import * as colorizer from './colorizer';
+import { LogLevel, getSeverity } from './base';
+import { Formatter } from './formatters';
+import { Output, outputs } from './outputs';
+import { Transformer } from './transformers';
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
-
-function getSeverity(logLevel: LogLevel): number {
-  switch (logLevel) {
-    case 'error':
-      return 0;
-    case 'warn':
-      return 1;
-    case 'info':
-      return 2;
-    case 'debug':
-    default:
-      return 3;
-  }
-}
-
-export interface Output {
-  formatter?: Formatter;
-  write: (logLevel: LogLevel, formattedData: string) => Promise<void>;
-  writeLn: (logLevel: LogLevel, formattedData: string) => Promise<void>;
-}
-
-export type OutputOptions = {
-  formatter?: Formatter;
-};
-
-export const outputs = {
-  console: (options: OutputOptions = {}): Output => {
-    const write = async (logLevel: LogLevel, formattedData: string) => {
-      console[logLevel](formattedData);
-    };
-    return {
-      formatter: options.formatter,
-      write,
-      writeLn: (...args) => write(...args),
-    };
-  },
-};
-
-export type LogMeta = {
-  level: LogLevel;
-  message: string;
-  [key: string]: any;
-};
-
-export type Transformer = (logMeta: LogMeta) => LogMeta;
-
-export function compose(...transformers: Transformer[]): Transformer {
-  return (logMeta: LogMeta) => {
-    return transformers.reduce((acc, curr) => curr(acc), logMeta);
-  };
-}
-
-type TimestampOptions = {
-  /**
-   * The format string for the timestamp. e.g. 'YYYY-MM-DD HH:mm:ss'.
-   * See date-fns docs at: https://date-fns.org/v1.30.1/docs/format
-   */
-  format?: string;
-};
-
-export const transformers = {
-  /**
-   * Adds a timestamp meta data field.
-   */
-  timestamp: (options: TimestampOptions = {}): Transformer => (x: LogMeta) => {
-    const now = new Date();
-    const timestamp = options.format
-      ? dateFormat(now, options.format)
-      : now.toISOString();
-    const transformed: LogMeta = {
-      ...x,
-      timestamp,
-    };
-    return transformed;
-  },
-};
-
-export type Formatter = (logMeta: LogMeta) => string;
-
-type JsonFormatterOptions = {
-  /**
-   * The amount of spaces to be used for formatting the `LogMeta` object.
-   */
-  spaces?: number;
-};
-
-export const formatters = {
-  json: (options: JsonFormatterOptions): Formatter => {
-    return (logMeta: LogMeta) =>
-      jsonStringify(logMeta, undefined, options.spaces);
-  },
-  simple: (
-    formatFn: (logMeta: LogMeta, simpleFormat: string) => string = (_, x) => x,
-  ): Formatter => {
-    function simpleLevel(logLevel: LogLevel) {
-      switch (logLevel) {
-        case 'debug':
-          return colorizer.green(logLevel.toUpperCase());
-        case 'info':
-          return colorizer.blue(logLevel.toUpperCase());
-        case 'warn':
-          return colorizer.yellow(logLevel.toUpperCase());
-        case 'error':
-          return colorizer.red(logLevel.toUpperCase());
-      }
-    }
-    return logMeta =>
-      formatFn(logMeta, `${simpleLevel(logMeta.level)}: ${logMeta.message}`);
-  },
-};
+export * from './base';
+export * from './formatters';
+export * from './outputs';
+export * from './transformers';
 
 type LoggerOptions = {
   threshold: LogLevel;
@@ -128,17 +22,7 @@ type LoggerOptions = {
   };
 };
 
-type ConfigLoggerOptions = {
-  threshold?: LogLevel;
-  formatter?: Formatter;
-  outputs?: Output[];
-  transformer?: Transformer;
-  defaultMeta?: { [key: string]: any };
-  splatOptions?: {
-    compact?: boolean;
-    colors?: boolean;
-  };
-};
+type ConfigLoggerOptions = { [K in keyof LoggerOptions]?: LoggerOptions[K] };
 
 type Logger = {
   log: (level: LogLevel, ...args: any[]) => void;
