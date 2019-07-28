@@ -3,7 +3,7 @@ import jsonStringify from 'fast-safe-stringify';
 import { LogLevel, LogMeta } from './base';
 import * as colorizer from './colorizer';
 
-export type Formatter = (logMeta: LogMeta) => string;
+export type Formatter = (logMeta: LogMeta, withColors?: boolean) => string;
 
 type JsonFormatterOptions = {
   /**
@@ -24,12 +24,14 @@ type SimpleFormatterOptions = {
 
 export const formatters = {
   json: (options: JsonFormatterOptions): Formatter => {
-    return (logMeta: LogMeta) =>
+    return (logMeta, _ = false) =>
       jsonStringify(logMeta, undefined, options.spaces);
   },
   simple: (options: SimpleFormatterOptions = {}): Formatter => {
     const formatFn = options.formatFn || ((_, x) => x);
-    function simpleLevel(logLevel: LogLevel) {
+    function simpleLevel(logLevel: LogLevel, withColors: boolean) {
+      if (!withColors) return logLevel.toUpperCase();
+
       switch (logLevel) {
         case 'debug':
           return colorizer.green(logLevel.toUpperCase());
@@ -41,7 +43,10 @@ export const formatters = {
           return colorizer.red(logLevel.toUpperCase());
       }
     }
-    return logMeta =>
-      formatFn(logMeta, `${simpleLevel(logMeta.level)}: ${logMeta.message}`);
+    return (logMeta, withColors = false) =>
+      formatFn(
+        logMeta,
+        `${simpleLevel(logMeta.level, withColors)}: ${logMeta.message}`,
+      );
   },
 };

@@ -55,24 +55,24 @@ export function createLogger(options: LoggerOptions): Logger {
     return getSeverity(logLevel) <= getSeverity(optionsToUse.threshold);
   }
 
-  const format = (formatString: string, ...args: any[]) =>
-    util.formatWithOptions(
+  function format(withColors: boolean, formatString: string, ...args: any[]) {
+    return util.formatWithOptions(
       {
         depth: null,
         compact:
           (optionsToUse.splatOptions && optionsToUse.splatOptions.compact) ||
           true,
-        colors:
-          (optionsToUse.splatOptions && optionsToUse.splatOptions.colors) ||
-          false,
+        colors: withColors,
       },
       formatString,
       ...args,
     );
-  function getMessage(args: any[]) {
+  }
+
+  function getMessage(withColors: boolean, args: any[]) {
     const [head, ...tail] = args;
     if (typeof head !== 'string') {
-      return format(args.map(formatArgMapper).join(' '), ...args);
+      return format(withColors, args.map(formatArgMapper).join(' '), ...args);
     }
 
     if (tail.length === 0) {
@@ -84,7 +84,7 @@ export function createLogger(options: LoggerOptions): Logger {
     const headWithAddedTokens = [head]
       .concat(tail.slice(tail.length - tokenCountToAdd).map(formatArgMapper))
       .join(' ');
-    return format(headWithAddedTokens, ...tail);
+    return format(withColors, headWithAddedTokens, ...tail);
   }
 
   const log = (logLevel: LogLevel, ...args: any[]) => {
@@ -94,13 +94,16 @@ export function createLogger(options: LoggerOptions): Logger {
     const transformer = optionsToUse.transformer || (x => x);
     const formatter = optionsToUse.formatter || formatters.simple();
     outputsToUse.forEach(output => {
-      const message = getMessage(args);
+      const message = getMessage(output.supportsColors || false, args);
       const logMeta = {
         ...optionsToUse.defaultMeta,
         level: logLevel,
         message,
       };
-      const formattedMeta = formatter(transformer(logMeta));
+      const formattedMeta = formatter(
+        transformer(logMeta),
+        output.supportsColors,
+      );
       output.writeLn(logLevel, formattedMeta);
     });
   };
