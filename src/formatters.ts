@@ -12,14 +12,23 @@ type JsonFormatterOptions = {
   spaces?: number;
 };
 
+type SimpleFormatterOptions = {
+  /**
+   * A format fn which will be used to format the given `LogMeta`. The `simpleFormat`
+   * parameter is a simple preformatted string containing the log level and message.
+   * If this property is undefined, the `simpleFormat` will be returned when using
+   * this formatter.
+   */
+  formatFn?: (logMeta: LogMeta, simpleFormat: string) => string;
+};
+
 export const formatters = {
   json: (options: JsonFormatterOptions): Formatter => {
     return (logMeta: LogMeta) =>
       jsonStringify(logMeta, undefined, options.spaces);
   },
-  simple: (
-    formatFn: (logMeta: LogMeta, simpleFormat: string) => string = (_, x) => x,
-  ): Formatter => {
+  simple: (options: SimpleFormatterOptions = {}): Formatter => {
+    const formatFn = options.formatFn || ((_, x) => x);
     function simpleLevel(logLevel: LogLevel) {
       switch (logLevel) {
         case 'debug':

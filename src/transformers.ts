@@ -1,4 +1,4 @@
-import dateFormat from 'date-fns/format';
+import { format as dateFormat } from 'date-fns';
 
 import { LogMeta } from './base';
 
@@ -7,7 +7,8 @@ export type Transformer = (logMeta: LogMeta) => LogMeta;
 type TimestampOptions = {
   /**
    * The format string for the timestamp. e.g. 'YYYY-MM-DD HH:mm:ss'.
-   * See date-fns docs at: https://date-fns.org/v1.30.1/docs/format
+   * If this property is undefined, the date will be formatted as ISO.
+   * See date-fns docs at: https://date-fns.org/v1.30.1/docs/format.
    */
   format?: string;
 };

@@ -1,7 +1,7 @@
 import * as util from 'util';
 
 import { LogLevel, getSeverity } from './base';
-import { Formatter } from './formatters';
+import { Formatter, formatters } from './formatters';
 import { Output, outputs } from './outputs';
 import { Transformer } from './transformers';
 
@@ -12,7 +12,7 @@ export * from './transformers';
 
 type LoggerOptions = {
   threshold: LogLevel;
-  formatter: Formatter;
+  formatter?: Formatter;
   outputs?: Output[];
   transformer?: Transformer;
   defaultMeta?: { [key: string]: any };
@@ -92,6 +92,7 @@ export function createLogger(options: LoggerOptions): Logger {
 
     const outputsToUse = optionsToUse.outputs || [outputs.console()];
     const transformer = optionsToUse.transformer || (x => x);
+    const formatter = optionsToUse.formatter || formatters.simple();
     outputsToUse.forEach(output => {
       const message = getMessage(args);
       const logMeta = {
@@ -99,7 +100,7 @@ export function createLogger(options: LoggerOptions): Logger {
         level: logLevel,
         message,
       };
-      const formattedMeta = optionsToUse.formatter(transformer(logMeta));
+      const formattedMeta = formatter(transformer(logMeta));
       output.writeLn(logLevel, formattedMeta);
     });
   };
